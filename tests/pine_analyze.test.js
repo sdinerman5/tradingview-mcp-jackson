@@ -7,6 +7,12 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { pineApiAvailable } from './_helpers.js';
+
+const PINE_API = await pineApiAvailable();
+const SKIP_PINE_API = PINE_API
+  ? false
+  : 'pine-facade.tradingview.com not reachable from this machine (offline or blocked network) — skipping live server-compile tests';
 
 // Extracted analyze function matching the tool's logic
 function analyze(source) {
@@ -240,7 +246,7 @@ strategy.entry("Long", strategy.long)`);
   });
 });
 
-describe('pine_check — server compile', () => {
+describe('pine_check — server compile', { skip: SKIP_PINE_API }, () => {
   it('should compile valid Pine Script via TradingView API', async () => {
     const source = `//@version=6
 indicator("API Test", overlay=true)

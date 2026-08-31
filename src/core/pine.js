@@ -187,21 +187,30 @@ export async function check({ source }) {
   const formData = new URLSearchParams();
   formData.append('source', source);
 
-  const response = await fetch(
-    'https://pine-facade.tradingview.com/pine-facade/translate_light?user_name=Guest&pine_id=00000000-0000-0000-0000-000000000000',
-    {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Referer': 'https://www.tradingview.com/',
-      },
-      body: formData,
-    }
-  );
+  let response;
+  try {
+    response = await fetch(
+      'https://pine-facade.tradingview.com/pine-facade/translate_light?user_name=Guest&pine_id=00000000-0000-0000-0000-000000000000',
+      {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Referer': 'https://www.tradingview.com/',
+        },
+        body: formData,
+        signal: AbortSignal.timeout(15000),
+      }
+    );
+  } catch (err) {
+    throw new Error(`Cannot reach the TradingView Pine API (pine-facade.tradingview.com): ${err.message}. Check that this machine is online and the domain is not blocked by a firewall or proxy. pine_analyze still works offline for static checks.`);
+  }
 
   if (!response.ok) {
-    throw new Error(`TradingView API returned ${response.status}: ${response.statusText}`);
+    const blocked = response.status === 403
+      ? ' — the network or TradingView is refusing unauthenticated (Guest) compile requests from this machine.'
+      : '';
+    throw new Error(`TradingView API returned ${response.status}: ${response.statusText}${blocked}`);
   }
 
   const result = await response.json();
