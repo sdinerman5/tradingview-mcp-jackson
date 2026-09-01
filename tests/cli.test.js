@@ -7,6 +7,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { pineApiAvailable } from './_helpers.js';
 import { execFileSync, execSync } from 'child_process';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -129,7 +130,12 @@ describe('CLI — pine analyze (offline)', () => {
   });
 });
 
-describe('CLI — pine check (server compile)', () => {
+const PINE_API = await pineApiAvailable();
+const SKIP_PINE_API = PINE_API
+  ? false
+  : 'pine-facade.tradingview.com not reachable from this machine (offline or blocked network) — skipping live server-compile tests';
+
+describe('CLI — pine check (server compile)', { skip: SKIP_PINE_API }, () => {
   it('compiles valid Pine Script', () => {
     const source = '//@version=6\nindicator("test")\nplot(close)';
     const { stdout, exitCode } = run(['pine', 'check'], { input: source });

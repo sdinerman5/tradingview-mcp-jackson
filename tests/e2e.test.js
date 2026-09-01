@@ -22,6 +22,12 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import CDP from 'chrome-remote-interface';
+import { tvDesktopAvailable } from './_helpers.js';
+
+const TV_AVAILABLE = await tvDesktopAvailable();
+const SKIP_E2E = TV_AVAILABLE
+  ? false
+  : 'TradingView Desktop is not running with --remote-debugging-port=9222 — skipping live e2e suite (start it via `tv launch` or the tv_launch tool to run these)';
 
 let client;
 let Runtime;
@@ -61,25 +67,20 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 // ═══════════════════════════════════════════════════════════════════════════
 
-describe('TradingView MCP — Full E2E (70 tools)', () => {
+describe('TradingView MCP — Full E2E (70 tools)', { skip: SKIP_E2E }, () => {
 
   before(async () => {
-    try {
-      const targets = await CDP.List({ host: 'localhost', port: 9222 });
-      const chartTarget = targets.find(t => t.url && t.url.includes('tradingview.com/chart'));
-      if (!chartTarget) throw new Error('No TradingView chart target found');
+    const targets = await CDP.List({ host: 'localhost', port: 9222 });
+    const chartTarget = targets.find(t => t.url && t.url.includes('tradingview.com/chart'));
+    if (!chartTarget) throw new Error('No TradingView chart target found. Make sure TradingView Desktop is running with --remote-debugging-port=9222 and a chart tab is open.');
 
-      client = await CDP({ host: 'localhost', port: 9222, target: chartTarget.id });
-      await client.Runtime.enable();
-      await client.Page.enable();
-      await client.DOM.enable();
-      Runtime = client.Runtime;
-      Input = client.Input;
-      Page = client.Page;
-    } catch (err) {
-      console.error('Cannot connect to TradingView. Make sure it is running with --remote-debugging-port=9222');
-      process.exit(1);
-    }
+    client = await CDP({ host: 'localhost', port: 9222, target: chartTarget.id });
+    await client.Runtime.enable();
+    await client.Page.enable();
+    await client.DOM.enable();
+    Runtime = client.Runtime;
+    Input = client.Input;
+    Page = client.Page;
   });
 
   after(async () => {
